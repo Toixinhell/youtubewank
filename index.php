@@ -24,33 +24,23 @@
 		<button id="playAll">Play All</button>
 		<button id="pauseAll">Pause All</button>
 		<button id="replayAll">Replay All</button>
+		<button id="save">Save</button>
+	
 	</div>
 
 
 	<div id="tubes">
 	<span id="noAdded">No Videos added</span>
-	<table>
+	<table id="mainTable">
 	</table>
 	</div>
 	
-	<script>
-	google.load("swfobject", "2.2");
-
-	// Because we are using jQuery, the elements can be accessed differently? [TIH]
-	$('#addVideo').click(addVideo);
-	alert
-	$('#go').click(searchClicked);
 	
-	//Submit on "Return"
-	$("#search").keyup(function(event){
-    if(event.keyCode == 13){
-        $("#go").click();
-    }
-});
-	</script>
 
 </body>
 
-
+<script>
+	pageLoad();
+	</script>
 
 </html>

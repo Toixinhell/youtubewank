@@ -10,3 +10,16 @@
 table {width:100%;}
 button {height:30px;}
 input {height:17px;}
+ 
+        
+.bubbleInfo {
+    position: relative;
+}
+
+.popup {
+    position: absolute;
+    display: none; /* keeps the popup hidden if no JS available */
+	background-color: lightgrey;
+}
+
+ 

@@ -1,4 +1,19 @@
+function pageLoad(){
+	google.load("swfobject", "2.2");
 
+	// Because we are using jQuery, the elements can be accessed differently? [TIH]
+	$('#addVideo').click(addVideo);
+	$('#go').click(searchClicked);
+	
+	//Submit on "Return"
+	$("#search").keyup(function(event){
+    if(event.keyCode == 13){
+        $("#go").click();
+    }
+
+});
+
+}
 
 // When finishing a text in the search field, I want the Enter key to initialize the search.
 function focusOnEnter(e)
@@ -29,40 +44,48 @@ function onYouTubePlayerReady(playerId) {
                         break;
                         //playing
                 case(1):
+						
                         console.log('playing');
                         currentVideo.find('.play').hide();
                         currentVideo.find('.pause').show();
-                        currentVideo.css('background-color','green');
+                        //currentVideo.css('background-color','green');
                         if(currentVideo.find('.repeatFromTo').is(':checked')){
-                                currentVideo.css('background-color','blue');
+                                //currentVideo.css('background-color','blue');
                                 i = 0;
-                                var start = currentVideo.find('.tFrom').val();
-                                var stop = currentVideo.find('.tTo').val();
-                                var interval = setInterval(function(){
+                                //var start = currentVideo.find('.tFrom').val();
+								var	start = timeToSeconds(currentVideo.find('.tFrom').val());
+                                //var stop = currentVideo.find('.tTo').val();
+                                var	stop = timeToSeconds(currentVideo.find('.tTo').val());
+								var interval = setInterval(function(){
                                                 end=false;
                                                 currentTime = handler.getCurrentTime();
                                                 console.log(currentTime);
-                                                currentVideo.css('background-color','blue');
+                                                //currentVideo.css('background-color','blue');
                                                 currentVideo.find('.pause').click(function(){
-                                                                currentVideo.css('background-color','yellow');
+                                                                //currentVideo.css('background-color','yellow');
                                                                 clearInterval(interval);
                                                 });
                                                 if(currentTime > stop){handler.seekTo(start);}
                                                 if(currentTime < start){handler.seekTo(start);}
                                 }, 500);
                         };
+						 
+						 //alert(durationToTime(handler.getDuration(),'hh:mm:ss'));
+						 $("#duration").text(durationToTime(handler.getDuration(), 'hh:mm:ss'));
+						 //$("#title").text(handler.getName());
+						 //$("#duration").text(durationToTime(handler.getDuration()));
                         break;
                         //paused
                 case(2):
                         console.log('paused');
                         currentVideo.find('.pause').hide();
                         currentVideo.find('.play').show();
-                        currentVideo.css('background-color','yellow');
+                        //currentVideo.css('background-color','yellow');
                         break;
                         //buffering
                 case(3):
                         console.log('buffering');
-                        currentVideo.css('background-color','orange');
+                        //currentVideo.css('background-color','orange');
                         break;
                         //ended
                 case(0):
@@ -71,12 +94,12 @@ function onYouTubePlayerReady(playerId) {
                         currentVideo.find('.play').show();
                         if(currentVideo.find('.repeat').is(':checked')){handler.seekTo(0);};
                         if(currentVideo.find('.autoremove').is(':checked')){currentVideo.remove();};
-                        currentVideo.css('background-color','black');
+                        //currentVideo.css('background-color','black');
                         break;
                         default: console.log(newState);
                 }
         };
-        
+       
         handler.addEventListener('onStateChange', 'onPlayerStateChange_'+playerId);
 }
 
@@ -104,15 +127,17 @@ function checkForAutoFunction(playerId){
 }
 
 function addVideoProcedure(key){
-alert('hier');
+
         $("#addVideo").attr("disabled", "disabled");
         window.timestamp = new Date().getTime();
-        $('#tubes table').append("<tr class='videoElement'><td><div id='"+window.timestamp+"'></div></td>"+
-                "<td><button class='play'>PLAY</button>"+
+        $('#tubes table').prepend(" <tr class='videoElement'><td><div id='"+window.timestamp+"'> </div></td>"+
+				"<td><div id='duration'></div></td>"+
+                "<td><div id='title'> Title not found.</div><button class='play'>PLAY</button>"+
                 "<button class='pause'>PAUSE</button>"+
                 "<button class='replay'>REPLAY</button>"+
                 "<input type='text' class='volume' size='2' max-lenght='3'><button class='vol'>Adjust Volume</button>"+
-                //"<button class='percent'>DEBUG!</button>"+
+				"<div class='bubbleInfo'><img class='trigger' src='images/info_s.png' height='30' width='30' /> <div id='infoPanel' class='popup'> fdgdgfdfgdfg </div></div>"+
+				//"<button class='percent'>DEBUG!</button>"+
                 "</td><td>"+
                 "<p><input type='checkbox' class='repeat'>Repeat</p>"+
                 "<p><input type='checkbox' class='autoremove'>Autoremove</p>"+
@@ -124,9 +149,13 @@ alert('hier');
         var params = { allowScriptAccess: "always" };
         var atts = { id: window.timestamp };
         swfobject.embedSWF("http://www.youtube.com/apiplayer?&enablejsapi=1&playerapiid="+window.timestamp+"&video_id="+key+"&version=3",window.timestamp, "100", "100", "8", null, null, params, atts);
-        setTimeout(function () {
+		setTimeout(function () {
                         $("#addVideo").removeAttr("disabled");
         }, 1000);
+		//update the duration DIV
+		getYouTubeInfo(key);
+
+		
 }
 
 function searchClicked()
@@ -237,12 +266,14 @@ function updateHandlers(){
         });
         
         $('.delete').click(function(){
-                        handler = $(this).parent().parent();
+					 handler = $(this).parent().parent();
                         handler.remove();
         });
         
         $('.vol').click(function(){
                         handler = getVideoObject($(this));
+						
+						
                         var volumeVal = $(this).parent().find('.volume').val();
                         if(volumeVal>100){
                                 volumeVal=100;
@@ -257,4 +288,186 @@ function updateHandlers(){
                         $('#searchBox').hide();
                         $('#noAdded').hide();
         });
+		
+		//Save Button
+		$('#save').click(function(){
+                        var videoArray = getAllVideosOnPage();        
+                        $.each(videoArray, function(index, value) {
+                                        handler = document.getElementById(value.id);
+                                        handler.seekTo(0);
+                                        handler.playVideo();
+                        });
+        });
+		
+		$('.bubbleInfo').each(function () {
+            var distance = 10;
+            var time = 250;
+            var hideDelay = 500;
+
+            var hideDelayTimer = null;
+
+            var beingShown = false;
+            var shown = false;
+            var trigger = $('.trigger', this);
+            var info = $('.popup', this).css('opacity', 0);
+
+
+            $([trigger.get(0), info.get(0)]).mouseover(function () {
+                if (hideDelayTimer) clearTimeout(hideDelayTimer);
+                if (beingShown || shown) {
+                    // don't trigger the animation again
+                    return;
+                } else {
+                    // reset position of info box
+                    beingShown = true;
+
+                    info.css({
+                        top: -90,
+                        left: -33,
+                        display: 'block'
+                    }).animate({
+                        top: '-=' + distance + 'px',
+                        opacity: 1
+                    }, time, 'swing', function() {
+                        beingShown = false;
+                        shown = true;
+                    });
+                }
+
+                return false;
+            }).mouseout(function () {
+                if (hideDelayTimer) clearTimeout(hideDelayTimer);
+                hideDelayTimer = setTimeout(function () {
+                    hideDelayTimer = null;
+                    info.animate({
+                        top: '-=' + distance + 'px',
+                        opacity: 0
+                    }, time, 'swing', function () {
+                        shown = false;
+                        info.css('display', 'none');
+                    });
+
+                }, hideDelay);
+
+                return false;
+            });
+        });
+    
 }
+
+//Turns Time (e.g. 1:30) to Seconds (90)
+function timeToSeconds(time) {
+	var seconds = 0;
+
+	if (countCharOccurance(time, ':') > 1){
+	
+		arr = time.split(':');
+		hour = parseInt(arr[0]);
+		min  = parseInt(arr[1]);
+		sec  = parseInt(arr[2]);
+			//alert ((hours * 3600) + (min * 60) + sec);
+		seconds = (hour * 3600) + (min * 60) + sec;
+		}
+	else {
+		arr = time.split(':');
+		min  = parseInt(arr[0]);
+		sec  = parseInt(arr[1]);
+			//alert ((min * 60) + sec);
+		seconds = (min * 60) + sec;
+	}
+	
+	return seconds;	
+}
+
+function supports_html5_storage() {
+	try {
+		alert ('Local storage availible');
+		return 'localStorage' in window && window['localStorage'] !== null;
+	} catch (e) {
+		alert ('Local storage not availible');
+		return false;
+	}
+}
+
+function durationToTime(secs, format){
+
+ var hr = Math.floor(secs / 3600);
+var min = Math.floor((secs - (hr * 3600))/60);
+var sec = Math.floor(secs - (hr * 3600) - (min * 60));
+ 
+if (hr < 10) { hr = "0" + hr; }
+if (min < 10) { min = "0" + min; }
+if (sec < 10) { sec = "0" + sec; }
+if (hr) { hr = "00"; }
+ 
+if (format != null) {
+var formatted_time = format.replace('hh', hr);
+formatted_time = formatted_time.replace('h', hr*1+""); // check for single hour formatting
+formatted_time = formatted_time.replace('mm', min);
+formatted_time = formatted_time.replace('m', min*1+""); // check for single minute formatting
+formatted_time = formatted_time.replace('ss', sec);
+formatted_time = formatted_time.replace('s', sec*1+""); // check for single second formatting
+return formatted_time;
+} 
+else {
+return hr + ':' + min + ':' + sec;
+}
+
+}
+
+
+function countCharOccurance(stringToCount, characterToCount){
+	var counter = 0;
+	var myArray = stringToCount.toLowerCase().split('');
+	for (i=0;i<myArray.length;i++)
+	{
+		if (myArray[i] == characterToCount)
+		{
+			counter++;
+		}
+	}
+	return counter;
+}
+
+ function getYouTubeInfo(key) {
+			try{
+                $.ajax({
+                        url: "http://gdata.youtube.com/feeds/api/videos/"+key+"?v=2&alt=json",
+                        dataType: "jsonp",
+                        success: function (data) { parseresults(data); }
+                });
+				
+				}
+				  
+			catch(err)
+				  {  txt="There was an error on this page.\n\n";
+				  txt+="Error description: " + err.message + "\n\n";
+				  txt+="Click OK to continue.\n\n";
+				  alert(txt);
+				  }
+		}
+
+        function parseresults(data) {
+                var title = data.entry.title.$t;
+                 var description = data.entry.media$group.media$description.$t;
+                // var viewcount = data.entry.yt$statistics.viewCount;
+                // var author = data.entry.author[0].name.$t;
+                $('#title').text(title);
+				$('#infoPanel').text(description);
+                // $('#description').html('<b>Description</b>: ' + description);
+                // $('#extrainfo').html('<b>Author</b>: ' + author + '<br/><b>Views</b>: ' + viewcount);
+                // getComments(data.entry.gd$comments.gd$feedLink.href + '&max-results=50&alt=json', 1);
+        }
+
+        // function getComments(commentsURL, startIndex) {
+                // $.ajax({
+                        // url: commentsURL + '&start-index=' + startIndex,
+                        // dataType: "jsonp",
+                        // success: function (data) {
+                        // $.each(data.feed.entry, function(key, val) {
+                                // $('#comments').append('<br/>Author: ' + val.author[0].name.$t + ', Comment: ' + val.content.$t);
+                        // });
+                        // if ($(data.feed.entry).size() == 50) { getComments(commentsURL, startIndex + 50); }
+                        // }
+                // });
+        // }
