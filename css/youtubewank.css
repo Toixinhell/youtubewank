@@ -5,7 +5,9 @@
 #searchBox {display:none;margin-top:90px;}
 .play, .replay, .pause {width:70px;}
 #noAdded {font-size:30px;font-weight:bold;color:red;}
-#essentials {position:fixed;top:0px;left:0px;width:100%;height:90px;background-color:white;}
+#essentials {position:fixed;top:0px;left:0px;width:80%;height:90px;background-color:lightgrey;}
+#mainControls {text-align: center;}
+#saveBox {position:fixed;top:0px;right:0px;width:20%;height:90px;background-color:lightgrey;}
 #tubes {margin-top:90px;}
 table {width:100%;}
 button {height:30px;}
@@ -21,5 +23,6 @@ input {height:17px;}
     display: none; /* keeps the popup hidden if no JS available */
 	background-color: lightgrey;
 }
+#volSlider { margin: 10px; }
 
- 
+.ui-slider-range { background: #ef2929; }

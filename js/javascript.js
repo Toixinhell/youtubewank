@@ -1,25 +1,38 @@
+
+
 function pageLoad(){
 	google.load("swfobject", "2.2");
 
 	// Because we are using jQuery, the elements can be accessed differently? [TIH]
 	$('#addVideo').click(addVideo);
 	$('#go').click(searchClicked);
+	$('#save').click(saveProject);
+	$('#load').click(loadProject);
+	$('#delete').click(deleteProject);	
+	$('#clear').click(clearProject);	
 	
 	//Submit on "Return"
 	$("#search").keyup(function(event){
     if(event.keyCode == 13){
         $("#go").click();
     }
-
-});
-
-}
-
-// When finishing a text in the search field, I want the Enter key to initialize the search.
-function focusOnEnter(e)
-{
-var keynum = e.keyCode || e.which; //for compatibility with IE < 9
-        searchClicked();
+	});
+	//DEBUG: Deletes all values of the localStorage
+	//localStorage.clear();
+	if (!localStorage.getItem('project'))
+	{
+			//console.log('none found');
+			//console.log(localStorage);
+			//localStorage.project = 'test'; 
+		
+	}
+	else
+	{
+		//console.log(localStorage);
+		//console.log(localStorage.length);
+		//console.log(localStorage.key(1));
+	}
+	loadSaveStates();
 }
 
 
@@ -41,6 +54,7 @@ function onYouTubePlayerReady(playerId) {
                         //not started
                 case(-1):
                         currentVideo.css('background-color','red');
+						$("#duration").text(durationToTime(handler.getDuration(), 'hh:mm:ss'));
                         break;
                         //playing
                 case(1):
@@ -48,9 +62,9 @@ function onYouTubePlayerReady(playerId) {
                         console.log('playing');
                         currentVideo.find('.play').hide();
                         currentVideo.find('.pause').show();
-                        //currentVideo.css('background-color','green');
+                        currentVideo.css('background-color','green');
                         if(currentVideo.find('.repeatFromTo').is(':checked')){
-                                //currentVideo.css('background-color','blue');
+                                currentVideo.css('background-color','blue');
                                 i = 0;
                                 //var start = currentVideo.find('.tFrom').val();
 								var	start = timeToSeconds(currentVideo.find('.tFrom').val());
@@ -60,20 +74,18 @@ function onYouTubePlayerReady(playerId) {
                                                 end=false;
                                                 currentTime = handler.getCurrentTime();
                                                 console.log(currentTime);
-                                                //currentVideo.css('background-color','blue');
+                                                currentVideo.css('background-color','blue');
                                                 currentVideo.find('.pause').click(function(){
-                                                                //currentVideo.css('background-color','yellow');
+                                                                currentVideo.css('background-color','yellow');
                                                                 clearInterval(interval);
                                                 });
                                                 if(currentTime > stop){handler.seekTo(start);}
                                                 if(currentTime < start){handler.seekTo(start);}
                                 }, 500);
-                        };
-						 
-						 //alert(durationToTime(handler.getDuration(),'hh:mm:ss'));
+                        };	
+						
+						// Duration can only be read, when the video is already loaded
 						 $("#duration").text(durationToTime(handler.getDuration(), 'hh:mm:ss'));
-						 //$("#title").text(handler.getName());
-						 //$("#duration").text(durationToTime(handler.getDuration()));
                         break;
                         //paused
                 case(2):
@@ -136,8 +148,8 @@ function addVideoProcedure(key){
                 "<button class='pause'>PAUSE</button>"+
                 "<button class='replay'>REPLAY</button>"+
                 "<input type='text' class='volume' size='2' max-lenght='3'><button class='vol'>Adjust Volume</button>"+
-				"<div class='bubbleInfo'><img class='trigger' src='images/info_s.png' height='30' width='30' /> <div id='infoPanel' class='popup'> fdgdgfdfgdfg </div></div>"+
-				//"<button class='percent'>DEBUG!</button>"+
+				"<div class='infoBubble'><img class='infoImg' src='images/info_s.png' height='30' width='30' title='test'  /> </div>"+
+				"<div class='volSlider'></div>"+
                 "</td><td>"+
                 "<p><input type='checkbox' class='repeat'>Repeat</p>"+
                 "<p><input type='checkbox' class='autoremove'>Autoremove</p>"+
@@ -148,13 +160,21 @@ function addVideoProcedure(key){
         updateHandlers();
         var params = { allowScriptAccess: "always" };
         var atts = { id: window.timestamp };
-        swfobject.embedSWF("http://www.youtube.com/apiplayer?&enablejsapi=1&playerapiid="+window.timestamp+"&video_id="+key+"&version=3",window.timestamp, "100", "100", "8", null, null, params, atts);
+        swfobject.embedSWF("http://www.youtube.com/apiplayer?&enablejsapi=1&playerapiid="+window.timestamp+"&video_id="+key+"&version=3&modestbranding=1",window.timestamp, "100", "100", "8", null, null, params, atts);
 		setTimeout(function () {
                         $("#addVideo").removeAttr("disabled");
         }, 1000);
 		//update the duration DIV
+		
 		getYouTubeInfo(key);
-
+		
+		//initSlider
+		
+		$( '.volSlider' ).slider({ max: 100, min: 0, value: 50 });
+		 	
+		
+		
+		
 		
 }
 
@@ -167,6 +187,9 @@ function searchClicked()
         //create a JavaScript element that returns our JSON data.
         var script = document.createElement('script');
         var searchTerm = $('#search').val();
+		
+		if(searchTerm){
+		
         script.setAttribute('id', 'jsonScript');
         script.setAttribute('type', 'text/javascript');
         script.setAttribute('src', 'http://gdata.youtube.com/feeds/' +
@@ -178,6 +201,11 @@ function searchClicked()
         //search request, and when the results come back callback
         //function showMyVideos(data) is called and the results passed to it
         document.documentElement.firstChild.appendChild(script);
+		}
+		else {
+		document.getElementById("searchBox").innerHTML =
+        'Please enter a text to search for...';
+		}
 }
 
 function showMyVideos(data)
@@ -188,7 +216,7 @@ function showMyVideos(data)
         for (var i = 0; i < entries.length; i++)
         {
                 var entry = entries[i];
-                var playCount = entry.yt$statistics.viewCount.valueOf() + ' views';
+                //var playCount = entry.yt$statistics.viewCount.valueOf() + ' views';
                 var title = entry.title.$t;
                 //ZC9S8-HMkAs&feature=youtube_gdata
                 key = entry.link[0].href.replace("http://www.youtube.com/watch?v=", "");
@@ -206,8 +234,29 @@ function showMyVideos(data)
 
 function updateHandlers(){
         $('.videoElement').click(function(){
+			
         });
-        
+		
+		
+		$.each($('.infoImg'), function() {
+				
+				$(this).tooltip();
+				});
+		
+		$.each($('.volSlider'), function() {
+				
+				var left = $(this).find('.ui-slider-handle')[0].style.left.replace('%', '');
+				console.log(left);
+				$(this).slider({ max: 100, min: 0, value: left});
+				});
+		
+		
+		$( '.volSlider' ).on( "slide", function( event, ui ) {
+						handler = getVideoObject($(this));
+                        setVideoVolume(handler, ui.value);
+						//$(this).parent().find('#volSlider').text(ui.value);		
+								} );
+								
         $('.play').click(function(){
                         $(this).hide();
                         $(this).parent().find('.replay').show();
@@ -289,90 +338,28 @@ function updateHandlers(){
                         $('#noAdded').hide();
         });
 		
-		//Save Button
-		$('#save').click(function(){
-                        var videoArray = getAllVideosOnPage();        
-                        $.each(videoArray, function(index, value) {
-                                        handler = document.getElementById(value.id);
-                                        handler.seekTo(0);
-                                        handler.playVideo();
-                        });
-        });
 		
-		$('.bubbleInfo').each(function () {
-            var distance = 10;
-            var time = 250;
-            var hideDelay = 500;
-
-            var hideDelayTimer = null;
-
-            var beingShown = false;
-            var shown = false;
-            var trigger = $('.trigger', this);
-            var info = $('.popup', this).css('opacity', 0);
-
-
-            $([trigger.get(0), info.get(0)]).mouseover(function () {
-                if (hideDelayTimer) clearTimeout(hideDelayTimer);
-                if (beingShown || shown) {
-                    // don't trigger the animation again
-                    return;
-                } else {
-                    // reset position of info box
-                    beingShown = true;
-
-                    info.css({
-                        top: -90,
-                        left: -33,
-                        display: 'block'
-                    }).animate({
-                        top: '-=' + distance + 'px',
-                        opacity: 1
-                    }, time, 'swing', function() {
-                        beingShown = false;
-                        shown = true;
-                    });
-                }
-
-                return false;
-            }).mouseout(function () {
-                if (hideDelayTimer) clearTimeout(hideDelayTimer);
-                hideDelayTimer = setTimeout(function () {
-                    hideDelayTimer = null;
-                    info.animate({
-                        top: '-=' + distance + 'px',
-                        opacity: 0
-                    }, time, 'swing', function () {
-                        shown = false;
-                        info.css('display', 'none');
-                    });
-
-                }, hideDelay);
-
-                return false;
-            });
-        });
+		
     
 }
 
 //Turns Time (e.g. 1:30) to Seconds (90)
 function timeToSeconds(time) {
 	var seconds = 0;
-
 	if (countCharOccurance(time, ':') > 1){
 	
 		arr = time.split(':');
 		hour = parseInt(arr[0]);
 		min  = parseInt(arr[1]);
 		sec  = parseInt(arr[2]);
-			//alert ((hours * 3600) + (min * 60) + sec);
+		
 		seconds = (hour * 3600) + (min * 60) + sec;
 		}
 	else {
 		arr = time.split(':');
 		min  = parseInt(arr[0]);
 		sec  = parseInt(arr[1]);
-			//alert ((min * 60) + sec);
+			
 		seconds = (min * 60) + sec;
 	}
 	
@@ -453,7 +440,10 @@ function countCharOccurance(stringToCount, characterToCount){
                 // var viewcount = data.entry.yt$statistics.viewCount;
                 // var author = data.entry.author[0].name.$t;
                 $('#title').text(title);
-				$('#infoPanel').text(description);
+				
+				$('.infoImg')[0].title = description;
+				console.log($('#infoImg').title);
+				console.log(description);
                 // $('#description').html('<b>Description</b>: ' + description);
                 // $('#extrainfo').html('<b>Author</b>: ' + author + '<br/><b>Views</b>: ' + viewcount);
                 // getComments(data.entry.gd$comments.gd$feedLink.href + '&max-results=50&alt=json', 1);
@@ -471,3 +461,73 @@ function countCharOccurance(stringToCount, characterToCount){
                         // }
                 // });
         // }
+function loadSaveStates(){
+	//TODO: Implement Load projects into Dropdown
+	var length = localStorage.length
+	select = document.getElementById('selectSave');
+	select.innerHTML = '';
+	console.log(length);
+	
+	for (var i = 0; i<length; i++){
+	
+		if(localStorage.key(i) != 'jStorage' && localStorage.key(i))
+		{
+			var opt = document.createElement('option');
+			opt.value = localStorage.key(i);
+			opt.innerHTML = localStorage.key(i);
+			select.appendChild(opt);
+		}
+		
+	}
+	
+	
+	if (!select.innerHTML.trim())
+	{
+		select.style.visibility="hidden" ;
+	}
+	else
+	{
+		select.style.visibility="visible" ;
+	}
+		
+}
+
+function saveProject(){
+   //TODO: Implement Save functionality
+			var pname=prompt("Please enter your project name:","projectname")
+			var text = $('#mainTable')[0].innerHTML;
+			//console.log(text);
+			localStorage.setItem(pname, text);
+			//console.log(localStorage.key(2));
+			loadSaveStates();
+        }
+
+function loadProject(){
+	var selected = $('#selectSave')[0].selectedIndex
+	//console.log(selected);
+	if (localStorage.key(selected) == 'jStorage'){
+			selected++;
+	}
+		var innerHTMLTable = localStorage[localStorage.key(selected)];
+		//console.log(innerHTMLTable);
+		$('#mainTable')[0].innerHTML = innerHTMLTable;
+		
+	updateHandlers();
+	getYouTubeInfo();
+}
+
+function deleteProject(){
+	var selected = $('#selectSave')[0].selectedIndex
+	var pname = $('#selectSave')[0].options[selected].value
+
+	$('#selectSave')[0].remove(selected);
+	localStorage.removeItem(pname);
+	
+	//console.log(pname);
+	loadSaveStates();
+}
+
+function clearProject(){
+
+	$('#mainTable')[0].innerHTML = '';
+}
